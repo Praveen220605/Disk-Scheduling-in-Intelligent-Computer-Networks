@@ -1,0 +1,77 @@
+from collections import deque
+import time
+
+class DiskRequest:
+    def __init__(self, request_id, arrival_time, track_number):
+        self.request_id = request_id
+        self.arrival_time = arrival_time
+        self.track_number = track_number
+
+class DiskQueueManager:
+    def __init__(self):
+        self.queue = deque()
+
+    def add_request(self, disk_request):
+        self.queue.append(disk_request)
+
+    def get_next_request(self):
+        return self.queue.popleft() if self.queue else None
+
+    def is_empty(self):
+        return len(self.queue) == 0
+
+class FCFS_Scheduler:
+    def __init__(self, queue_manager):
+        self.queue_manager = queue_manager
+        self.current_track = 0
+
+    def schedule(self):
+        if not self.queue_manager.is_empty():
+            request = self.queue_manager.get_next_request()
+            seek_time = abs(request.track_number - self.current_track)
+            self.current_track = request.track_number
+            return request, seek_time
+        return None, 0
+
+class PerformanceTracker:
+    def __init__(self):
+        self.total_seek_time = 0
+        self.total_requests = 0
+        self.start_time = time.time()
+
+    def update(self, seek_time):
+        self.total_seek_time += seek_time
+        self.total_requests += 1
+
+    def report(self):
+        end_time = time.time()
+        elapsed_time = end_time - self.start_time
+        if self.total_requests == 0:
+            average_seek_time = 0
+        else:
+            average_seek_time = self.total_seek_time / self.total_requests
+        print(f"Total requests processed: {self.total_requests}")
+        print(f"Total seek time: {self.total_seek_time}")
+        print(f"Average seek time per request: {average_seek_time}")
+        print(f"Elapsed time: {elapsed_time:.2f} seconds")
+
+# Simulation
+queue_manager = DiskQueueManager()
+scheduler = FCFS_Scheduler(queue_manager)
+performance_tracker = PerformanceTracker()
+
+# Add some disk requests to the queue
+queue_manager.add_request(DiskRequest(1, 0, 50))
+queue_manager.add_request(DiskRequest(2, 2, 180))
+queue_manager.add_request(DiskRequest(3, 4, 10))
+queue_manager.add_request(DiskRequest(4, 6, 120))
+
+# Process the requests
+while not queue_manager.is_empty():
+    request, seek_time = scheduler.schedule()
+    if request:
+        print(f"Processing request {request.request_id} at track {request.track_number} with seek time {seek_time}")
+        performance_tracker.update(seek_time)
+
+# Performance report
+performance_tracker.report()
